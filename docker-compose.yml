@@ -1,20 +1,37 @@
-version: "3.9"
+db:
+  container_name: db
+  image: "postgis/postgis"
+  restart: always
+  networks:
+    - main
+  ports:
+    - "5432:5432"
+  volumes:
+    - postgres_data:/var/lib/postgresql/data
+  environment:
+    POSTGRES_USER: kazemi
+    POSTGRES_PASSWORD: kazemi@1234
+    POSTGRES_DB: radar_project
+  healthcheck:
+    test: ["CMD-SHELL", "pg_isready -U kazemi"]
+    interval: 30s
+    timeout: 10s
+    retries: 5
 
-services:
-  app:
-    image: new:1
-    ports:
-      - "8000:8000"
-    depends_on:
-     - db
+app:
+  container_name: app
+  build: .
+  networks:
+    - main
+  command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8181"
+  volumes:
+    - .:/copy
+  depends_on:
+    - db
+  env_file:
+    - ./.env
+  ports:
+    - "8181:8181"
+  restart: always
 
-  db:
-    image: postgres:latest
-    ports:
-      - "5432:5432"
-    volumes:
-      - ./libshop-data:/var/lib/postgresql/data
-    environment:
-      - POSTGRES_DB=lib
-      - POSTGRES_USER=lib
-      - POSTGRES_PASSWORD=123@456
+  
